@@ -91,7 +91,7 @@ export default function Home() {
         <div className="container">
           <div className="header">
             <h1>🌤️ Biowetter Wiesbaden</h1>
-            <p>Biyometeorolojik Veriler - DWD Open Data</p>
+            <p>Biometeorologische Daten - DWD Open Data</p>
           </div>
 
           {loading && (
