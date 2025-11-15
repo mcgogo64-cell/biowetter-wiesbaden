@@ -24,6 +24,8 @@ export default function Home() {
   const [data, setData] = useState<BiowetterData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [theme, setTheme] = useState<'light' | 'dark' | 'auto'>('light');
+  const [showSettings, setShowSettings] = useState(false);
 
   const fetchBiowetter = async () => {
     setLoading(true);
@@ -42,7 +44,33 @@ export default function Home() {
 
   useEffect(() => {
     fetchBiowetter();
+    
+    // Theme handling
+    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | 'auto' | null;
+    if (savedTheme) {
+      setTheme(savedTheme);
+    }
+    
+    // Apply theme
+    applyTheme(savedTheme || 'light');
   }, []);
+
+  const applyTheme = (selectedTheme: 'light' | 'dark' | 'auto') => {
+    const root = document.documentElement;
+    if (selectedTheme === 'auto') {
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      root.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+    } else {
+      root.setAttribute('data-theme', selectedTheme);
+    }
+  };
+
+  const handleThemeChange = (newTheme: 'light' | 'dark' | 'auto') => {
+    setTheme(newTheme);
+    localStorage.setItem('theme', newTheme);
+    applyTheme(newTheme);
+    setShowSettings(false);
+  };
 
   const getBadgeClass = (belastung?: string) => {
     if (!belastung) return 'badge badge-low';
@@ -85,13 +113,38 @@ export default function Home() {
         <meta name="description" content="Biowetter für Wiesbaden basierend auf DWD Open Data" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#7b6cf6" />
       </Head>
 
       <main>
         <div className="container">
+          {/* Settings Button */}
+          <button className="settings-button" onClick={() => setShowSettings(!showSettings)}>
+            ⚙️
+          </button>
+          
+          {showSettings && (
+            <div className="settings-menu active">
+              <div className="settings-option" onClick={() => handleThemeChange('light')}>
+                ☀️ Hell
+              </div>
+              <div className="settings-option" onClick={() => handleThemeChange('dark')}>
+                🌙 Dunkel
+              </div>
+              <div className="settings-option" onClick={() => handleThemeChange('auto')}>
+                🔄 Auto
+              </div>
+            </div>
+          )}
+
           <div className="header">
-            <h1>🌤️ Biowetter Wiesbaden</h1>
+            <div className="header-content">
+              <span className="header-icon">🌤️</span>
+              <h1>Biowetter Wiesbaden</h1>
+            </div>
             <p>Biometeorologische Daten - DWD Open Data</p>
+            <p className="header-subtitle">Realtime Data from DWD</p>
           </div>
 
           {loading && (
@@ -115,13 +168,15 @@ export default function Home() {
 
           {!loading && !error && data && (
             <div className="card">
-              <h2 style={{ marginBottom: '1rem', color: '#667eea', fontSize: '1.8rem' }}>
-                {data.region} - {formatDate(data.date)}
-              </h2>
+              <div className="date-header">
+                <span className="date-icon">📅</span>
+                <span>{data.region} - {formatDate(data.date)}</span>
+              </div>
 
               <div style={{ marginTop: '1.5rem' }}>
                 <div className="info-grid">
                   <div className="info-item">
+                    <span className="info-item-icon">⚡</span>
                     <h3>Biometeorologische Belastung</h3>
                     <p>
                       <span className={getBadgeClass(data.belastung)}>
@@ -131,12 +186,14 @@ export default function Home() {
                   </div>
 
                   <div className="info-item">
+                    <span className="info-item-icon">😊</span>
                     <h3>Empfinden</h3>
                     <p>{data.gefuehl || 'Nicht verfügbar'}</p>
                   </div>
 
                   {data.temperatur && (
                     <div className="info-item">
+                      <span className="info-item-icon">🌡️</span>
                       <h3>Temperatur</h3>
                       <p>{data.temperatur}°C</p>
                     </div>
@@ -144,6 +201,7 @@ export default function Home() {
 
                   {data.luftfeuchtigkeit && (
                     <div className="info-item">
+                      <span className="info-item-icon">💧</span>
                       <h3>Luftfeuchtigkeit</h3>
                       <p>{data.luftfeuchtigkeit}%</p>
                     </div>
@@ -151,6 +209,7 @@ export default function Home() {
 
                   {data.uvIndex !== undefined && (
                     <div className="info-item">
+                      <span className="info-item-icon">☀️</span>
                       <h3>UV-Index</h3>
                       <p>
                         {data.uvIndex}
@@ -165,6 +224,7 @@ export default function Home() {
 
                   {data.ozon !== undefined && (
                     <div className="info-item">
+                      <span className="info-item-icon">☁️</span>
                       <h3>Ozon</h3>
                       <p>
                         {data.ozon} µg/m³
@@ -180,53 +240,42 @@ export default function Home() {
 
                 {/* Pollenflug Sektion */}
                 {data.pollen && Object.keys(data.pollen).length > 0 && (
-                  <div style={{ marginTop: '2rem', padding: '1.5rem', background: '#f8f9fa', borderRadius: '12px' }}>
-                    <h3 style={{ color: '#667eea', marginBottom: '1rem', fontSize: '1.1rem' }}>
-                      🌸 Pollenflug (Polen Uçuşu)
-                    </h3>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem' }}>
-                      {Object.entries(data.pollen).map(([pollenType, level]) => (
-                        <div key={pollenType} style={{ padding: '0.75rem', background: 'white', borderRadius: '8px', border: '1px solid #e0e0e0' }}>
-                          <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: '0.25rem' }}>
-                            {pollenType}
+                  <div className="pollen-section">
+                    <div className="pollen-header">
+                      <span>🌸</span>
+                      <span>Pollenflug (Polen Uçuşu)</span>
+                    </div>
+                    <div className="pollen-grid">
+                      {Object.entries(data.pollen).map(([pollenType, level]) => {
+                        const levelText = getPollenLevelText(level);
+                        const pollenClass = level === 0 ? 'pollen-keine' : level === 2 ? 'pollen-mittel' : level === 3 ? 'pollen-hoch' : 'pollen-keine';
+                        
+                        return (
+                          <div key={pollenType} className="pollen-item">
+                            <div className="pollen-item-name">{pollenType}</div>
+                            <div className="pollen-item-value">
+                              <span className={`badge ${pollenClass}`}>
+                                {levelText}
+                              </span>
+                            </div>
                           </div>
-                          <div style={{ fontSize: '1.2rem', fontWeight: '600' }}>
-                            <span className={getPollenBadgeClass(level)}>
-                              {getPollenLevelText(level)}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}
 
                 {data.beschreibung && (
-                  <div style={{ marginTop: '2rem', padding: '1.5rem', background: '#f8f9fa', borderRadius: '12px' }}>
-                    <h3 style={{ color: '#667eea', marginBottom: '1rem', fontSize: '1.1rem' }}>
-                      Beschreibung
-                    </h3>
-                    <p style={{ lineHeight: '1.8', color: '#555', fontSize: '1rem' }}>
-                      {data.beschreibung}
-                    </p>
+                  <div className="description-section">
+                    <h3>Beschreibung</h3>
+                    <p>{data.beschreibung}</p>
                   </div>
                 )}
 
                 {data.warnung && (
-                  <div style={{ 
-                    marginTop: '1.5rem', 
-                    padding: '1rem', 
-                    background: '#fff3cd', 
-                    border: '1px solid #ffc107',
-                    borderRadius: '8px',
-                    borderLeft: '4px solid #ffc107'
-                  }}>
-                    <h3 style={{ color: '#856404', marginBottom: '0.5rem', fontSize: '1rem' }}>
-                      ⚠️ Warnung
-                    </h3>
-                    <p style={{ color: '#856404', lineHeight: '1.6' }}>
-                      {data.warnung}
-                    </p>
+                  <div className="warning-section">
+                    <h3>⚠️ Warnung</h3>
+                    <p>{data.warnung}</p>
                   </div>
                 )}
 
@@ -243,16 +292,16 @@ export default function Home() {
 
           <div className="footer">
             <p>
-              Datenquelle:{' '}
+              © 2025 Biowetter Wiesbaden – Data by{' '}
               <a 
                 href="https://www.dwd.de/DE/leistungen/opendata/opendata.html" 
                 target="_blank" 
                 rel="noopener noreferrer"
               >
-                Deutscher Wetterdienst (DWD) Open Data
+                DWD Open Data
               </a>
             </p>
-            <p style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}>
+            <p style={{ marginTop: '0.5rem', fontSize: '0.85rem', opacity: 0.7 }}>
               Standort: Wiesbaden, Hessen, Deutschland
             </p>
           </div>
