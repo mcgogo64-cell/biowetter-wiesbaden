@@ -1,5 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import axios from 'axios';
+import { parse } from 'csv-parse/sync';
+import { parseString } from 'xml2js';
 
 interface BiowetterData {
   region: string;
@@ -19,19 +21,30 @@ async function fetchDWDData(): Promise<BiowetterData | null> {
   
   // DWD'nin biyometeorolojik veriler için olası endpoint'ler
   // Bu dosyalar düzenli olarak güncellenir ve herkese açıktır
+  // DWD genellikle XML ve CSV formatında veri sunar
   const possibleEndpoints = [
-    // Biyometeorolojik uyarılar - Genel
+    // Biyometeorolojik uyarılar - XML formatları
+    `${baseUrl}/climate_environment/health/alerts/warnings/BGWW_L.xml`,
+    `${baseUrl}/climate_environment/health/alerts/warnings/bgww_l.xml`,
+    `${baseUrl}/climate_environment/health/alerts/warnings/BGWW.xml`,
+    `${baseUrl}/climate_environment/health/alerts/warnings/bgww.xml`,
+    
+    // Alternatif XML endpoint'leri
+    `${baseUrl}/climate_environment/health/alerts/biometeorology/biometeorology.xml`,
+    `${baseUrl}/climate_environment/health/alerts/biometeorology/Biometeorology.xml`,
+    
+    // CSV formatları
+    `${baseUrl}/climate_environment/health/alerts/warnings/biometeorology.csv`,
+    `${baseUrl}/climate_environment/health/alerts/warnings/Biometeorology.csv`,
+    
+    // JSON formatları (eğer varsa)
     `${baseUrl}/climate_environment/health/alerts/warnings/bgww.json`,
     `${baseUrl}/climate_environment/health/alerts/warnings/BGWW.json`,
-    
-    // Biyometeorolojik tahminler
     `${baseUrl}/climate_environment/health/alerts/biometeorology/biometeorology.json`,
     
     // Hessen bölgesi için spesifik veriler
-    `${baseUrl}/climate_environment/health/alerts/warnings/hessen.json`,
-    
-    // Alternatif: CSV format (JSON'a dönüştürülebilir)
-    `${baseUrl}/climate_environment/health/alerts/warnings/biometeorology.csv`,
+    `${baseUrl}/climate_environment/health/alerts/warnings/hessen.xml`,
+    `${baseUrl}/climate_environment/health/alerts/warnings/Hessen.xml`,
   ];
 
   // Her bir endpoint'i sırayla dene
@@ -40,20 +53,38 @@ async function fetchDWDData(): Promise<BiowetterData | null> {
       console.log(`Versuche DWD-Endpoint: ${endpoint}`);
       
       const response = await axios.get(endpoint, {
-        timeout: 15000,
+        timeout: 20000,
         headers: {
-          'Accept': 'application/json, text/csv, */*',
-          'User-Agent': 'Biowetter-Wiesbaden/1.0',
+          'Accept': 'application/xml, text/csv, application/json, */*',
+          'User-Agent': 'Mozilla/5.0 (compatible; Biowetter-Wiesbaden/1.0)',
         },
         validateStatus: (status) => status < 500, // 4xx hataları için bile devam et
+        responseType: 'text', // XML ve CSV için text olarak al
       });
 
       // Başarılı istek kontrolü
       if (response.status === 200 && response.data) {
-        console.log(`Erfolgreich Daten von: ${endpoint}`);
+        console.log(`Erfolgreich Daten von: ${endpoint} (${response.headers['content-type']})`);
         
-        // Veriyi parse et
-        const parsedData = parseDWDData(response.data, 'Wiesbaden', endpoint);
+        // Format'a göre parse et
+        let parsedData: BiowetterData | null = null;
+        
+        const contentType = response.headers['content-type'] || '';
+        
+        if (endpoint.endsWith('.xml') || contentType.includes('xml')) {
+          parsedData = await parseDWDXML(response.data, 'Wiesbaden');
+        } else if (endpoint.endsWith('.csv') || contentType.includes('csv')) {
+          parsedData = parseDWDCSV(response.data, 'Wiesbaden');
+        } else {
+          // JSON veya diğer formatlar
+          try {
+            const jsonData = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
+            parsedData = parseDWDData(jsonData, 'Wiesbaden', endpoint);
+          } catch (e) {
+            // JSON parse hatası, text olarak devam et
+            console.log('JSON parse hatası, text olarak parse ediliyor...');
+          }
+        }
         
         if (parsedData) {
           return parsedData;
@@ -69,6 +100,97 @@ async function fetchDWDData(): Promise<BiowetterData | null> {
   // Tüm endpoint'ler başarısız olduysa fallback veri döndür
   console.warn('Alle DWD-Endpoints fehlgeschlagen. Verwende Fallback-Daten.');
   return getFallbackData();
+}
+
+// XML verilerini parse et
+async function parseDWDXML(xmlData: string, city: string): Promise<BiowetterData | null> {
+  try {
+    return new Promise((resolve, reject) => {
+      parseString(xmlData, { explicitArray: false, mergeAttrs: true }, (err, result) => {
+        if (err) {
+          console.error('XML Parse Error:', err);
+          resolve(null);
+          return;
+        }
+
+        try {
+          // DWD XML yapısına göre parse
+          // Genellikle: <warnings><warning><region>...</region></warning></warnings>
+          const warnings = result?.warnings?.warning || result?.Warnungen?.Warnung || result?.Warning || [];
+          const warningArray = Array.isArray(warnings) ? warnings : [warnings];
+
+          for (const warning of warningArray) {
+            const region = (warning.region || warning.Region || warning.name || warning.Name || '').toString().toLowerCase();
+            const code = (warning.code || warning.Code || warning.id || warning.Id || '').toString();
+
+            if (region.includes('wiesbaden') || 
+                region.includes('hessen') || 
+                region.includes('frankfurt') ||
+                code === '11' ||
+                code === '06414' || // Wiesbaden PLZ
+                region.includes('hess')) {
+              
+              const parsed = formatBiowetterData(warning, city);
+              resolve(parsed);
+              return;
+            }
+          }
+
+          // Eğer spesifik bölge bulunamazsa, genel veriyi kullan
+          if (warningArray.length > 0) {
+            const firstWarning = warningArray[0];
+            const parsed = formatBiowetterData(firstWarning, city);
+            resolve(parsed);
+            return;
+          }
+
+          resolve(null);
+        } catch (error) {
+          console.error('XML Processing Error:', error);
+          resolve(null);
+        }
+      });
+    });
+  } catch (error) {
+    console.error('XML Parse Exception:', error);
+    return null;
+  }
+}
+
+// CSV verilerini parse et
+function parseDWDCSV(csvData: string, city: string): BiowetterData | null {
+  try {
+    const records = parse(csvData, {
+      columns: true,
+      skip_empty_lines: true,
+      trim: true,
+      relax_column_count: true,
+    }) as Record<string, string>[];
+
+    for (const record of records) {
+      const region = (record.region || record.Region || record.name || record.Name || record.Stadt || '').toString().toLowerCase();
+      const code = (record.code || record.Code || record.id || record.Id || record.PLZ || '').toString();
+
+      if (region.includes('wiesbaden') || 
+          region.includes('hessen') || 
+          region.includes('frankfurt') ||
+          code === '11' ||
+          code === '06414') {
+        
+        return formatBiowetterData(record, city);
+      }
+    }
+
+    // Eğer spesifik bölge bulunamazsa, ilk kaydı kullan
+    if (records.length > 0) {
+      return formatBiowetterData(records[0], city);
+    }
+
+    return null;
+  } catch (error) {
+    console.error('CSV Parse Error:', error);
+    return null;
+  }
 }
 
 function parseDWDData(data: any, city: string, sourceUrl?: string): BiowetterData | null {
@@ -145,30 +267,62 @@ function parseDWDData(data: any, city: string, sourceUrl?: string): BiowetterDat
 
 function formatBiowetterData(rawData: any, city: string): BiowetterData {
   // DWD verilerinden standart formatı oluştur
-  // Farklı alan isimlerini destekle
+  // Farklı alan isimlerini destekle (XML, CSV, JSON formatları için)
   
   const getValue = (keys: string[], defaultValue?: string) => {
     for (const key of keys) {
       if (rawData[key] !== undefined && rawData[key] !== null) {
-        return String(rawData[key]);
+        const value = rawData[key];
+        // Object ise _text veya $text gibi xml2js yapıları olabilir
+        if (typeof value === 'object' && value._text) {
+          return String(value._text);
+        }
+        if (typeof value === 'object' && value.$) {
+          return String(value.$);
+        }
+        return String(value);
       }
     }
     return defaultValue;
   };
   
+  const getNumericValue = (keys: string[]) => {
+    for (const key of keys) {
+      if (rawData[key] !== undefined && rawData[key] !== null) {
+        const value = rawData[key];
+        const num = typeof value === 'object' && value._text 
+          ? parseFloat(value._text) 
+          : parseFloat(String(value));
+        if (!isNaN(num)) {
+          return num;
+        }
+      }
+    }
+    return undefined;
+  };
+  
+  // Belastungsstufen mapping (DWD'den gelen değerleri standartlaştır)
+  const normalizeBelastung = (value?: string): string => {
+    if (!value) return 'Moderat';
+    const lower = value.toLowerCase();
+    if (lower.includes('niedrig') || lower.includes('low') || lower.includes('1')) return 'Niedrig';
+    if (lower.includes('moderat') || lower.includes('moderate') || lower.includes('2')) return 'Moderat';
+    if (lower.includes('erhöht') || lower.includes('high') || lower.includes('3')) return 'Erhöht';
+    if (lower.includes('hoch') || lower.includes('very high') || lower.includes('4')) return 'Hoch';
+    return 'Moderat';
+  };
+  
   return {
     region: city,
-    date: getValue(['date', 'Date', 'datum', 'Datum', 'issued', 'Issued']) || 
+    date: getValue(['date', 'Date', 'datum', 'Datum', 'issued', 'Issued', 'zeit', 'Zeit', 'timestamp']) || 
           new Date().toISOString().split('T')[0],
-    belastung: getValue(['belastung', 'Belastung', 'stress', 'Stress', 'belastungstufe', 'Belastungsstufe'], 'Moderat'),
-    gefuehl: getValue(['gefuehl', 'Gefühl', 'feeling', 'Feeling', 'empfinden', 'Empfinden'], 'Angenehm'),
-    beschreibung: getValue(['beschreibung', 'Beschreibung', 'description', 'Description', 'text', 'Text'], 
+    belastung: normalizeBelastung(getValue(['belastung', 'Belastung', 'stress', 'Stress', 'belastungstufe', 'Belastungsstufe', 'level', 'Level', 'stufe', 'Stufe'])),
+    gefuehl: getValue(['gefuehl', 'Gefühl', 'feeling', 'Feeling', 'empfinden', 'Empfinden', 'befinden', 'Befinden'], 'Angenehm'),
+    beschreibung: getValue(['beschreibung', 'Beschreibung', 'description', 'Description', 'text', 'Text', 'hinweis', 'Hinweis', 'meldung', 'Meldung'], 
                           'Die biometeorologischen Bedingungen sind für die meisten Menschen als angenehm zu bezeichnen.'),
-    warnung: getValue(['warnung', 'Warnung', 'warning', 'Warning', 'alert', 'Alert']),
-    temperatur: rawData.temperatur || rawData.Temperatur || rawData.temperature || rawData.Temperature || undefined,
-    luftfeuchtigkeit: rawData.luftfeuchtigkeit || rawData.Luftfeuchtigkeit || 
-                     rawData.humidity || rawData.Humidity || 
-                     rawData.relativeHumidity || undefined,
+    warnung: getValue(['warnung', 'Warnung', 'warning', 'Warning', 'alert', 'Alert', 'hinweis', 'Hinweis']),
+    temperatur: getNumericValue(['temperatur', 'Temperatur', 'temperature', 'Temperature', 'temp', 'Temp', 't', 'T']),
+    luftfeuchtigkeit: getNumericValue(['luftfeuchtigkeit', 'Luftfeuchtigkeit', 'humidity', 'Humidity', 'feuchte', 'Feuchte', 'rh', 'RH', 'relativeHumidity']),
   };
 }
 

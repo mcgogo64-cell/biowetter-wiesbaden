@@ -8,19 +8,28 @@
     "start": "next start",
     "lint": "next lint"
   },
-  "keywords": ["biowetter", "wiesbaden", "dwd", "weather", "meteorology"],
+  "keywords": [
+    "biowetter",
+    "wiesbaden",
+    "dwd",
+    "weather",
+    "meteorology"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {
     "axios": "^1.13.2",
+    "csv-parse": "^6.1.0",
     "next": "^16.0.3",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "xml2js": "^0.6.2"
   },
   "devDependencies": {
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
+    "@types/xml2js": "^0.4.14",
     "typescript": "^5.9.3"
   }
 }
