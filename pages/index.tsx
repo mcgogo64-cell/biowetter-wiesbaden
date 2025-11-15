@@ -353,6 +353,12 @@ export default function Home() {
             <p style={{ marginTop: '0.5rem', fontSize: '0.85rem', opacity: 0.7 }}>
               Standort: Wiesbaden, Hessen, Deutschland
             </p>
+            <p style={{ marginTop: '0.5rem', fontSize: '0.85rem', opacity: 0.7 }}>
+              Kontakt:{' '}
+              <a href="mailto:goekhan.yasar@gmx.de" style={{ textDecoration: 'underline' }}>
+                goekhan.yasar@gmx.de
+              </a>
+            </p>
           </div>
         </div>
       </main>
