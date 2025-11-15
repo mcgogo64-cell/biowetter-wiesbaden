@@ -1,0 +1,11 @@
+# robots.txt for Biowetter Wiesbaden
+User-agent: *
+Allow: /
+Disallow: /api/
+
+# Sitemap
+Sitemap: https://biowetter-wiesbaden.vercel.app/sitemap.xml
+
+# Crawl delay (optional)
+Crawl-delay: 10
+

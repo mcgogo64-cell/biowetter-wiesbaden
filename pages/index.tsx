@@ -117,12 +117,50 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>Biowetter Wiesbaden - DWD Daten</title>
-        <meta name="description" content="Biowetter für Wiesbaden basierend auf DWD Open Data" />
+        {/* Primary Meta Tags */}
+        <title>Biowetter Wiesbaden - Aktuelle biometeorologische Daten | DWD Open Data</title>
+        <meta name="title" content="Biowetter Wiesbaden - Aktuelle biometeorologische Daten | DWD Open Data" />
+        <meta name="description" content="Aktuelle biometeorologische Daten für Wiesbaden: Belastungsindex, Pollenflug, UV-Index und Ozon-Vorhersage. Basierend auf offiziellen DWD (Deutscher Wetterdienst) Open Data." />
+        <meta name="keywords" content="Biowetter, Wiesbaden, DWD, Pollenflug, UV-Index, Ozon, biometeorologisch, Wetter, Hessen, Deutschland, Gesundheit, Allergie" />
+        <meta name="author" content="Gökhan Yasar" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="language" content="de" />
+        <meta httpEquiv="content-language" content="de-DE" />
+        <meta name="robots" content="index, follow" />
+        <meta name="googlebot" content="index, follow" />
+        
+        {/* Canonical URL */}
+        <link rel="canonical" href="https://biowetter-wiesbaden.vercel.app/" />
+        
+        {/* Open Graph / Facebook */}
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://biowetter-wiesbaden.vercel.app/" />
+        <meta property="og:title" content="Biowetter Wiesbaden - Aktuelle biometeorologische Daten | DWD Open Data" />
+        <meta property="og:description" content="Aktuelle biometeorologische Daten für Wiesbaden: Belastungsindex, Pollenflug, UV-Index und Ozon-Vorhersage. Basierend auf offiziellen DWD Open Data." />
+        <meta property="og:image" content="https://biowetter-wiesbaden.vercel.app/og-image.png" />
+        <meta property="og:locale" content="de_DE" />
+        <meta property="og:site_name" content="Biowetter Wiesbaden" />
+        
+        {/* Twitter */}
+        <meta property="twitter:card" content="summary_large_image" />
+        <meta property="twitter:url" content="https://biowetter-wiesbaden.vercel.app/" />
+        <meta property="twitter:title" content="Biowetter Wiesbaden - Aktuelle biometeorologische Daten" />
+        <meta property="twitter:description" content="Aktuelle biometeorologische Daten für Wiesbaden: Belastungsindex, Pollenflug, UV-Index und Ozon-Vorhersage vom DWD." />
+        <meta property="twitter:image" content="https://biowetter-wiesbaden.vercel.app/og-image.png" />
+        
+        {/* Favicon & App */}
         <link rel="icon" href="/favicon.ico" />
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#7b6cf6" />
+        <meta name="theme-color" content="#1E1E2E" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="Biowetter Wiesbaden" />
+        
+        {/* Geo Tags */}
+        <meta name="geo.region" content="DE-HE" />
+        <meta name="geo.placename" content="Wiesbaden" />
+        <meta name="geo.position" content="50.0826;8.2400" />
+        <meta name="ICBM" content="50.0826, 8.2400" />
       </Head>
 
       <main>

@@ -5,17 +5,25 @@ Biowetter Wiesbaden ist eine Web-Anwendung, die biometeorologische Daten für Wi
 ## 🌤️ Features
 
 - **Biometeorologische Daten**: Aktuelle Belastungs- und Empfindungsstufen
-- **DWD Open Data Integration**: Direkte Datenabfrage vom Deutschen Wetterdienst
+- **DWD Open Data Integration**: Direkte Datenabfrage vom Deutschen Wetterdienst (via Bright Sky API)
+- **Pollenflug**: 8 Pollenarten mit aktuellen Belastungsstufen
+- **UV-Index & Ozon**: Tagesaktuelle Gefahrenindizes
 - **Responsive Design**: Optimiert für Desktop und Mobile
+- **Dark Theme**: Modernes dunkles Design mit Glassmorphism-Effekten
+- **SVG Icons**: Lucide Icons für professionelles Erscheinungsbild
 - **Deutsche Sprache**: Vollständig auf Deutsch
-- **Live Updates**: Möglichkeit zur Aktualisierung der Daten
+- **PWA**: Als App installierbar auf mobilen Geräten
+- **SEO Optimiert**: Vollständige Meta-Tags, Structured Data, Sitemap
 
 ## 🚀 Technologie-Stack
 
-- **Next.js 16** - React Framework
+- **Next.js 16** - React Framework mit SSG/SSR
 - **TypeScript** - Typsichere Programmierung
+- **Lucide React** - Moderne SVG Icon Library
 - **Axios** - HTTP Client für API-Anfragen
-- **CSS3** - Modernes Styling
+- **Bright Sky API** - DWD Daten in JSON Format
+- **CSS3** - Modernes Dark Theme mit Glassmorphism
+- **PWA** - Progressive Web App Support
 
 ## 📦 Installation
 
@@ -92,20 +100,45 @@ Die Anwendung versucht verschiedene mögliche Endpoints und sucht nach Daten fü
 
 ### `/api/biowetter`
 
-Gibt die aktuellen biometeorologischen Daten für Wiesbaden zurück.
+Gibt die vollständigen biometeorologischen Daten für Wiesbaden zurück (kombiniert alle Datenquellen).
 
 **Response:**
 ```json
 {
   "region": "Wiesbaden",
-  "date": "2024-01-15",
+  "date": "2025-11-15",
   "belastung": "Moderat",
   "gefuehl": "Angenehm",
-  "beschreibung": "Die biometeorologischen Bedingungen sind...",
-  "temperatur": 20,
-  "luftfeuchtigkeit": 65
+  "beschreibung": "Aktuelle Wetterbedingungen in Wiesbaden...",
+  "temperatur": 8.6,
+  "luftfeuchtigkeit": 99,
+  "pollen": {
+    "Hasel": 0,
+    "Erle": 0,
+    "Birke": 0,
+    "Gräser": 0,
+    "Roggen": 0,
+    "Beifuß": 0,
+    "Ambrosia": 0
+  },
+  "uvIndex": 3,
+  "uvIndexStufe": "Moderat",
+  "ozon": 76,
+  "ozonStufe": "Niedrig"
 }
 ```
+
+### `/api/pollen`
+
+Nur Pollenflug-Daten.
+
+### `/api/gefahrenindizes`
+
+Nur UV-Index und Ozon-Daten.
+
+### `/api/weather-real`
+
+Aktuelle Wetterdaten via Bright Sky API (DWD Quelle).
 
 ## 🔧 Scripts
 
@@ -120,7 +153,9 @@ MIT License
 
 ## 👤 Autor
 
-Ihr Name
+Gökhan Yasar  
+📧 goekhan.yasar@gmx.de  
+🌐 [https://biowetter-wiesbaden.vercel.app/](https://biowetter-wiesbaden.vercel.app/)
 
 ## 🙏 Danksagungen
 
@@ -129,8 +164,24 @@ Ihr Name
 
 ## 🔗 Links
 
+- [Live Demo](https://biowetter-wiesbaden.vercel.app/)
+- [GitHub Repository](https://github.com/mcgogo64-cell/biowetter-wiesbaden)
 - [DWD Open Data](https://opendata.dwd.de)
+- [Bright Sky API](https://brightsky.dev/)
 - [DWD Website](https://www.dwd.de)
 - [Vercel](https://vercel.com)
-- [Next.js Dokumentation](https://nextjs.org/docs)
+- [Lucide Icons](https://lucide.dev/)
+
+## 🔍 SEO Features
+
+- ✅ Vollständige Meta Tags (Title, Description, Keywords)
+- ✅ Open Graph Tags (Facebook, LinkedIn)
+- ✅ Twitter Card Tags
+- ✅ Structured Data (JSON-LD Schema.org)
+- ✅ Sitemap.xml
+- ✅ Robots.txt
+- ✅ Canonical URLs
+- ✅ Geo-Tags (Wiesbaden Koordinaten)
+- ✅ Language Tags (de-DE)
+- ✅ Security Headers
 
