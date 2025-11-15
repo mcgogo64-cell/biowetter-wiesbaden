@@ -24,8 +24,6 @@ export default function Home() {
   const [data, setData] = useState<BiowetterData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [theme, setTheme] = useState<'light' | 'dark' | 'auto'>('light');
-  const [showSettings, setShowSettings] = useState(false);
 
   const fetchBiowetter = async () => {
     setLoading(true);
@@ -45,32 +43,10 @@ export default function Home() {
   useEffect(() => {
     fetchBiowetter();
     
-    // Theme handling
-    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | 'auto' | null;
-    if (savedTheme) {
-      setTheme(savedTheme);
-    }
-    
-    // Apply theme
-    applyTheme(savedTheme || 'light');
-  }, []);
-
-  const applyTheme = (selectedTheme: 'light' | 'dark' | 'auto') => {
+    // Always apply dark theme
     const root = document.documentElement;
-    if (selectedTheme === 'auto') {
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      root.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
-    } else {
-      root.setAttribute('data-theme', selectedTheme);
-    }
-  };
-
-  const handleThemeChange = (newTheme: 'light' | 'dark' | 'auto') => {
-    setTheme(newTheme);
-    localStorage.setItem('theme', newTheme);
-    applyTheme(newTheme);
-    setShowSettings(false);
-  };
+    root.setAttribute('data-theme', 'dark');
+  }, []);
 
   const getBadgeClass = (belastung?: string) => {
     if (!belastung) return 'badge badge-low';
@@ -119,25 +95,6 @@ export default function Home() {
 
       <main>
         <div className="container">
-          {/* Settings Button */}
-          <button className="settings-button" onClick={() => setShowSettings(!showSettings)}>
-            ⚙️
-          </button>
-          
-          {showSettings && (
-            <div className="settings-menu active">
-              <div className="settings-option" onClick={() => handleThemeChange('light')}>
-                ☀️ Hell
-              </div>
-              <div className="settings-option" onClick={() => handleThemeChange('dark')}>
-                🌙 Dunkel
-              </div>
-              <div className="settings-option" onClick={() => handleThemeChange('auto')}>
-                🔄 Auto
-              </div>
-            </div>
-          )}
-
           <div className="header">
             <div className="header-content">
               <span className="header-icon">🌤️</span>
@@ -243,7 +200,7 @@ export default function Home() {
                   <div className="pollen-section">
                     <div className="pollen-header">
                       <span>🌸</span>
-                      <span>Pollenflug (Polen Uçuşu)</span>
+                      <span>Pollenflug</span>
                     </div>
                     <div className="pollen-grid">
                       {Object.entries(data.pollen).map(([pollenType, level]) => {

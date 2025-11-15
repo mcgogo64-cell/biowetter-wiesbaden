@@ -7,19 +7,14 @@
 }
 
 :root {
-  --gradient-start: #7b6cf6;
-  --gradient-end: #a3bffa;
-  --card-radius: 20px;
-  --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-[data-theme='dark'] {
   --bg-gradient-start: #1E1E2E;
   --bg-gradient-end: #2D2D44;
   --card-bg: rgba(255, 255, 255, 0.05);
   --text-primary: #E4E4E7;
   --text-secondary: #A1A1AA;
+  --card-radius: 20px;
+  --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 html,
@@ -29,17 +24,13 @@ body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
+  background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
   min-height: 100vh;
   transition: var(--transition);
 }
 
-[data-theme='dark'] body {
-  background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
-}
-
 body {
-  color: #333;
+  color: var(--text-primary);
 }
 
 a {
@@ -116,18 +107,14 @@ a {
 
 /* Cards */
 .card {
-  background: white;
+  background: var(--card-bg);
+  color: var(--text-primary);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--card-radius);
   padding: 2.5rem;
   box-shadow: var(--card-shadow);
   margin-bottom: 2rem;
   transition: var(--transition);
-}
-
-[data-theme='dark'] .card {
-  background: var(--card-bg);
-  color: var(--text-primary);
-  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .card:hover {
@@ -144,18 +131,14 @@ a {
 }
 
 .info-item {
-  background: #f8f9fa;
+  background: rgba(255, 255, 255, 0.05);
+  border-left-color: #a3bffa;
   padding: 2rem;
   border-radius: 16px;
-  border-left: 4px solid #667eea;
+  border-left: 4px solid #a3bffa;
   transition: var(--transition);
   position: relative;
   overflow: hidden;
-}
-
-[data-theme='dark'] .info-item {
-  background: rgba(255, 255, 255, 0.05);
-  border-left-color: #a3bffa;
 }
 
 .info-item:hover {
@@ -170,7 +153,7 @@ a {
 }
 
 .info-item h3 {
-  color: #667eea;
+  color: #a3bffa;
   font-size: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -178,19 +161,11 @@ a {
   font-weight: 600;
 }
 
-[data-theme='dark'] .info-item h3 {
-  color: #a3bffa;
-}
-
 .info-item p {
   font-size: 2rem;
   font-weight: 700;
-  color: #333;
-  margin: 0;
-}
-
-[data-theme='dark'] .info-item p {
   color: var(--text-primary);
+  margin: 0;
 }
 
 /* Badges - Pastel Colors */
@@ -232,13 +207,9 @@ a {
 .pollen-section {
   margin-top: 2rem;
   padding: 2rem;
-  background: #f8f9fa;
+  background: rgba(255, 255, 255, 0.05);
   border-radius: var(--card-radius);
   box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.05);
-}
-
-[data-theme='dark'] .pollen-section {
-  background: rgba(255, 255, 255, 0.05);
 }
 
 .pollen-header {
@@ -248,10 +219,6 @@ a {
   margin-bottom: 1.5rem;
   font-size: 1.2rem;
   font-weight: 600;
-  color: #667eea;
-}
-
-[data-theme='dark'] .pollen-header {
   color: #a3bffa;
 }
 
@@ -280,17 +247,12 @@ a {
 .pollen-item {
   min-width: 150px;
   padding: 1.25rem;
-  background: white;
+  background: rgba(255, 255, 255, 0.05);
   border-radius: 16px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.05);
   transition: var(--transition);
   flex-shrink: 0;
-}
-
-[data-theme='dark'] .pollen-item {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.1);
 }
 
 .pollen-item:hover {
@@ -300,13 +262,9 @@ a {
 
 .pollen-item-name {
   font-size: 0.9rem;
-  color: #666;
+  color: var(--text-secondary);
   margin-bottom: 0.5rem;
   font-weight: 500;
-}
-
-[data-theme='dark'] .pollen-item-name {
-  color: var(--text-secondary);
 }
 
 .pollen-item-value {
@@ -355,72 +313,6 @@ a {
   transform: translateY(0);
 }
 
-/* Settings Button */
-.settings-button {
-  position: fixed;
-  top: 2rem;
-  right: 2rem;
-  background: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  width: 48px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 1.5rem;
-  color: white;
-  transition: var(--transition);
-  z-index: 1000;
-}
-
-.settings-button:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: rotate(90deg);
-}
-
-.settings-menu {
-  position: fixed;
-  top: 5rem;
-  right: 2rem;
-  background: white;
-  border-radius: 16px;
-  padding: 1.5rem;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-  min-width: 200px;
-  z-index: 999;
-  display: none;
-}
-
-[data-theme='dark'] .settings-menu {
-  background: #2D2D44;
-  color: var(--text-primary);
-}
-
-.settings-menu.active {
-  display: block;
-}
-
-.settings-option {
-  padding: 0.75rem 0;
-  cursor: pointer;
-  border-bottom: 1px solid #e0e0e0;
-  transition: var(--transition);
-}
-
-[data-theme='dark'] .settings-option {
-  border-color: rgba(255, 255, 255, 0.1);
-}
-
-.settings-option:hover {
-  color: #667eea;
-}
-
-.settings-option:last-child {
-  border-bottom: none;
-}
 
 /* Footer */
 .footer {
@@ -463,54 +355,36 @@ a {
 .description-section {
   margin-top: 2rem;
   padding: 1.5rem;
-  background: #f8f9fa;
-  border-radius: var(--card-radius);
-  border-left: 4px solid #667eea;
-}
-
-[data-theme='dark'] .description-section {
   background: rgba(255, 255, 255, 0.05);
-  border-left-color: #a3bffa;
+  border-radius: var(--card-radius);
+  border-left: 4px solid #a3bffa;
 }
 
 .description-section h3 {
-  color: #667eea;
+  color: #a3bffa;
   margin-bottom: 1rem;
   font-size: 1.1rem;
   font-weight: 600;
 }
 
-[data-theme='dark'] .description-section h3 {
-  color: #a3bffa;
-}
-
 .description-section p {
   line-height: 1.8;
-  color: #555;
-  font-size: 1rem;
-}
-
-[data-theme='dark'] .description-section p {
   color: var(--text-secondary);
+  font-size: 1rem;
 }
 
 /* Warning Section */
 .warning-section {
   margin-top: 1.5rem;
   padding: 1.5rem;
-  background: #fff3cd;
-  border: 1px solid #ffc107;
-  border-radius: var(--card-radius);
-  border-left: 4px solid #ffc107;
-}
-
-[data-theme='dark'] .warning-section {
   background: rgba(255, 243, 205, 0.1);
-  border-color: rgba(255, 193, 7, 0.3);
+  border: 1px solid rgba(255, 193, 7, 0.3);
+  border-radius: var(--card-radius);
+  border-left: 4px solid rgba(255, 193, 7, 0.3);
 }
 
 .warning-section h3 {
-  color: #856404;
+  color: #fbbf24;
   margin-bottom: 0.5rem;
   font-size: 1rem;
   font-weight: 600;
@@ -520,13 +394,8 @@ a {
 }
 
 .warning-section p {
-  color: #856404;
-  line-height: 1.6;
-}
-
-[data-theme='dark'] .warning-section h3,
-[data-theme='dark'] .warning-section p {
   color: #fbbf24;
+  line-height: 1.6;
 }
 
 /* Responsive */
@@ -554,21 +423,6 @@ a {
 
   .info-item p {
     font-size: 1.5rem;
-  }
-
-  .settings-button {
-    top: 1rem;
-    right: 1rem;
-    width: 40px;
-    height: 40px;
-    font-size: 1.2rem;
-  }
-
-  .settings-menu {
-    top: 4rem;
-    right: 1rem;
-    left: 1rem;
-    min-width: auto;
   }
 
   .pollen-grid {
