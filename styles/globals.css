@@ -71,6 +71,22 @@ a {
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
 }
 
+.header-content .icon-pill {
+  width: 56px;
+  height: 56px;
+}
+
+.header-content .icon-pill svg {
+  width: 28px;
+  height: 28px;
+  stroke-width: 2;
+}
+
+.date-header .icon-pill {
+  width: 40px;
+  height: 40px;
+}
+
 .header h1 {
   font-family: 'Poppins', sans-serif;
   font-size: 2.5rem;
@@ -103,6 +119,12 @@ a {
 
 .date-icon {
   font-size: 1.5rem;
+}
+
+.date-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 /* Cards */
@@ -144,6 +166,31 @@ a {
 .info-item:hover {
   transform: translateY(-4px);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+}
+
+/* Icon Pill Styles */
+.icon-pill {
+  width: 40px;
+  height: 40px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+  flex-shrink: 0;
+}
+
+.icon-pill:hover {
+  transform: scale(1.05);
+  opacity: 0.9;
+  box-shadow: 0 0 22px rgba(56, 189, 248, 0.7) !important;
+}
+
+.info-item-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 1rem;
 }
 
 .info-item-icon {
@@ -215,7 +262,7 @@ a {
 .pollen-header {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 12px;
   margin-bottom: 1.5rem;
   font-size: 1.2rem;
   font-weight: 600;
@@ -423,6 +470,30 @@ a {
 
   .info-item p {
     font-size: 1.5rem;
+  }
+
+  .icon-pill {
+    width: 36px;
+    height: 36px;
+  }
+
+  .icon-pill svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .header-content .icon-pill {
+    width: 48px;
+    height: 48px;
+  }
+
+  .header-content .icon-pill svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .info-item-header {
+    gap: 10px;
   }
 
   .pollen-grid {

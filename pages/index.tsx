@@ -1,6 +1,17 @@
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import axios from 'axios';
+import { 
+  Activity, 
+  Smile, 
+  Thermometer, 
+  Droplets, 
+  Sun, 
+  Cloud,
+  Flower2,
+  Calendar,
+  CloudSun
+} from 'lucide-react';
 
 interface BiowetterData {
   region: string;
@@ -72,6 +83,27 @@ export default function Home() {
     return levels[level] || 'Unbekannt';
   };
 
+  // Icon Pill Component
+  const IconPill = ({ 
+    icon: Icon, 
+    gradient, 
+    shadowColor 
+  }: { 
+    icon: React.ElementType; 
+    gradient: string;
+    shadowColor: string;
+  }) => (
+    <div 
+      className="icon-pill"
+      style={{
+        background: gradient,
+        boxShadow: `0 0 18px ${shadowColor}`,
+      }}
+    >
+      <Icon size={24} strokeWidth={1.8} color="#E5E7EB" />
+    </div>
+  );
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('de-DE', {
@@ -97,7 +129,11 @@ export default function Home() {
         <div className="container">
           <div className="header">
             <div className="header-content">
-              <span className="header-icon">🌤️</span>
+              <IconPill 
+                icon={CloudSun} 
+                gradient="linear-gradient(135deg, #4F46E5, #06B6D4)"
+                shadowColor="rgba(56, 189, 248, 0.45)"
+              />
               <h1>Biowetter Wiesbaden</h1>
             </div>
             <p>Biometeorologische Daten - DWD Open Data</p>
@@ -126,15 +162,25 @@ export default function Home() {
           {!loading && !error && data && (
             <div className="card">
               <div className="date-header">
-                <span className="date-icon">📅</span>
+                <IconPill 
+                  icon={Calendar} 
+                  gradient="linear-gradient(135deg, #4F46E5, #06B6D4)"
+                  shadowColor="rgba(56, 189, 248, 0.45)"
+                />
                 <span>{data.region} - {formatDate(data.date)}</span>
               </div>
 
               <div style={{ marginTop: '1.5rem' }}>
                 <div className="info-grid">
                   <div className="info-item">
-                    <span className="info-item-icon">⚡</span>
-                    <h3>Biometeorologische Belastung</h3>
+                    <div className="info-item-header">
+                      <IconPill 
+                        icon={Activity} 
+                        gradient="linear-gradient(135deg, #FBBF24, #F97316)"
+                        shadowColor="rgba(251, 191, 36, 0.45)"
+                      />
+                      <h3>Biometeorologische Belastung</h3>
+                    </div>
                     <p>
                       <span className={getBadgeClass(data.belastung)}>
                         {data.belastung || 'Nicht verfügbar'}
@@ -143,31 +189,67 @@ export default function Home() {
                   </div>
 
                   <div className="info-item">
-                    <span className="info-item-icon">😊</span>
-                    <h3>Empfinden</h3>
+                    <div className="info-item-header">
+                      <IconPill 
+                        icon={Smile} 
+                        gradient="linear-gradient(135deg, #8B5CF6, #6366F1)"
+                        shadowColor="rgba(139, 92, 246, 0.45)"
+                      />
+                      <h3>Empfinden</h3>
+                    </div>
                     <p>{data.gefuehl || 'Nicht verfügbar'}</p>
                   </div>
 
                   {data.temperatur && (
                     <div className="info-item">
-                      <span className="info-item-icon">🌡️</span>
-                      <h3>Temperatur</h3>
+                      <div className="info-item-header">
+                        <IconPill 
+                          icon={Thermometer} 
+                          gradient="linear-gradient(135deg, #F97316, #EF4444)"
+                          shadowColor="rgba(249, 115, 22, 0.45)"
+                        />
+                        <h3>Temperatur</h3>
+                      </div>
                       <p>{data.temperatur}°C</p>
                     </div>
                   )}
 
                   {data.luftfeuchtigkeit && (
                     <div className="info-item">
-                      <span className="info-item-icon">💧</span>
-                      <h3>Luftfeuchtigkeit</h3>
+                      <div className="info-item-header">
+                        <IconPill 
+                          icon={Droplets} 
+                          gradient="linear-gradient(135deg, #06B6D4, #3B82F6)"
+                          shadowColor="rgba(6, 182, 212, 0.45)"
+                        />
+                        <h3>Luftfeuchtigkeit</h3>
+                      </div>
                       <p>{data.luftfeuchtigkeit}%</p>
                     </div>
                   )}
 
                   {data.uvIndex !== undefined && (
                     <div className="info-item">
-                      <span className="info-item-icon">☀️</span>
-                      <h3>UV-Index</h3>
+                      <div className="info-item-header">
+                        <IconPill 
+                          icon={Sun} 
+                          gradient={`linear-gradient(135deg, ${
+                            data.uvIndexStufe?.toLowerCase().includes('niedrig') ? '#22C55E' :
+                            data.uvIndexStufe?.toLowerCase().includes('moderat') ? '#FBBF24' :
+                            '#EF4444'
+                          }, ${
+                            data.uvIndexStufe?.toLowerCase().includes('niedrig') ? '#16A34A' :
+                            data.uvIndexStufe?.toLowerCase().includes('moderat') ? '#F59E0B' :
+                            '#DC2626'
+                          })`}
+                          shadowColor={`rgba(${
+                            data.uvIndexStufe?.toLowerCase().includes('niedrig') ? '34, 197, 94' :
+                            data.uvIndexStufe?.toLowerCase().includes('moderat') ? '251, 191, 36' :
+                            '239, 68, 68'
+                          }, 0.45)`}
+                        />
+                        <h3>UV-Index</h3>
+                      </div>
                       <p>
                         {data.uvIndex}
                         {data.uvIndexStufe && (
@@ -181,8 +263,14 @@ export default function Home() {
 
                   {data.ozon !== undefined && (
                     <div className="info-item">
-                      <span className="info-item-icon">☁️</span>
-                      <h3>Ozon</h3>
+                      <div className="info-item-header">
+                        <IconPill 
+                          icon={Cloud} 
+                          gradient="linear-gradient(135deg, #60A5FA, #93C5FD)"
+                          shadowColor="rgba(96, 165, 250, 0.45)"
+                        />
+                        <h3>Ozon</h3>
+                      </div>
                       <p>
                         {data.ozon} µg/m³
                         {data.ozonStufe && (
@@ -199,7 +287,11 @@ export default function Home() {
                 {data.pollen && Object.keys(data.pollen).length > 0 && (
                   <div className="pollen-section">
                     <div className="pollen-header">
-                      <span>🌸</span>
+                      <IconPill 
+                        icon={Flower2} 
+                        gradient="linear-gradient(135deg, #EC4899, #F472B6)"
+                        shadowColor="rgba(236, 72, 153, 0.45)"
+                      />
                       <span>Pollenflug</span>
                     </div>
                     <div className="pollen-grid">
