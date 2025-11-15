@@ -12,6 +12,13 @@ interface BiowetterData {
   warnung?: string;
   temperatur?: number;
   luftfeuchtigkeit?: number;
+  pollen?: {
+    [key: string]: number; // Polen türü -> Yoğunluk (0-3)
+  };
+  uvIndex?: number;
+  uvIndexStufe?: string;
+  ozon?: number;
+  ozonStufe?: string;
 }
 
 // DWD Open Data'dan Wiesbaden için biyometeorolojik veri çekme
@@ -350,6 +357,156 @@ function getFallbackData(): BiowetterData {
 // DWD FTP: ftp://opendata.dwd.de/climate_environment/health/alerts/
 // Ancak HTTP üzerinden erişim daha kolay ve modern uygulamalar için önerilir
 
+// Polen ve Gefahrenindizes için helper fonksiyonlar
+// Not: Bu fonksiyonlar direkt olarak DWD verilerini çeker
+// Internal API çağrıları yerine direkt DWD endpoint'lerini kullanır
+async function fetchPollenDataInternal(): Promise<{ [key: string]: number } | null> {
+  const baseUrl = 'https://opendata.dwd.de';
+  
+  const possibleEndpoints = [
+    `${baseUrl}/climate_environment/health/alerts/pollenflug/pollenflug.json`,
+    `${baseUrl}/climate_environment/health/alerts/pollenflug/Pollenflug.json`,
+    `${baseUrl}/climate_environment/health/alerts/pollenflug/hessen.json`,
+  ];
+
+  for (const endpoint of possibleEndpoints) {
+    try {
+      const response = await axios.get(endpoint, {
+        timeout: 15000,
+        headers: { 'Accept': 'application/json, */*' },
+        validateStatus: () => true,
+        responseType: 'json',
+      });
+
+      if (response.status === 200 && response.data) {
+        const data = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
+        
+        // Basit parse (pollen.ts'deki parsePollenData mantığını kullan)
+        let regionData: any = null;
+        
+        if (Array.isArray(data)) {
+          regionData = data.find((item: any) => {
+            const region = (item.region || item.Region || item.name || '').toString().toLowerCase();
+            return region.includes('wiesbaden') || region.includes('hessen');
+          });
+        } else if (data.regionen || data.regions) {
+          const regions = data.regionen || data.regions || [];
+          if (Array.isArray(regions)) {
+            regionData = regions.find((item: any) => {
+              const region = (item.name || item.region || '').toString().toLowerCase();
+              return region.includes('wiesbaden') || region.includes('hessen');
+            });
+          }
+        }
+
+        if (regionData?.pollen) {
+          return regionData.pollen;
+        }
+      }
+    } catch (error) {
+      continue;
+    }
+  }
+  
+  return null;
+}
+
+async function fetchGefahrenindizesDataInternal(): Promise<{
+  uvIndex?: number;
+  uvIndexStufe?: string;
+  ozon?: number;
+  ozonStufe?: string;
+} | null> {
+  const baseUrl = 'https://opendata.dwd.de';
+  
+  const endpoints = {
+    uv: [
+      `${baseUrl}/climate_environment/health/alerts/uv/uv.json`,
+      `${baseUrl}/climate_environment/health/alerts/uv_index.json`,
+    ],
+    ozon: [
+      `${baseUrl}/climate_environment/health/alerts/ozon/ozon.json`,
+      `${baseUrl}/climate_environment/health/alerts/ozonvorhersage.json`,
+    ],
+  };
+
+  let uvIndex: number | undefined = undefined;
+  let ozon: number | undefined = undefined;
+
+  // UV-Index çek
+  for (const endpoint of endpoints.uv) {
+    try {
+      const response = await axios.get(endpoint, {
+        timeout: 15000,
+        headers: { 'Accept': 'application/json, */*' },
+        validateStatus: () => true,
+        responseType: 'json',
+      });
+
+      if (response.status === 200 && response.data) {
+        const data = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
+        const regions = Array.isArray(data) ? data : (data.regionen || data.regions || []);
+        const regionData = Array.isArray(regions) ? regions.find((item: any) => {
+          const region = (item.name || item.region || '').toString().toLowerCase();
+          return region.includes('wiesbaden') || region.includes('hessen');
+        }) : null;
+
+        if (regionData?.uvIndex !== undefined || regionData?.UVIndex !== undefined) {
+          const uv = parseFloat(String(regionData.uvIndex || regionData.UVIndex || 0));
+          if (!isNaN(uv)) {
+            uvIndex = Math.round(uv * 10) / 10;
+            break;
+          }
+        }
+      }
+    } catch (error) {
+      continue;
+    }
+  }
+
+  // Ozon çek
+  for (const endpoint of endpoints.ozon) {
+    try {
+      const response = await axios.get(endpoint, {
+        timeout: 15000,
+        headers: { 'Accept': 'application/json, */*' },
+        validateStatus: () => true,
+        responseType: 'json',
+      });
+
+      if (response.status === 200 && response.data) {
+        const data = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
+        const regions = Array.isArray(data) ? data : (data.regionen || data.regions || []);
+        const regionData = Array.isArray(regions) ? regions.find((item: any) => {
+          const region = (item.name || item.region || '').toString().toLowerCase();
+          return region.includes('wiesbaden') || region.includes('hessen');
+        }) : null;
+
+        if (regionData?.ozon !== undefined || regionData?.Ozon !== undefined) {
+          const oz = parseFloat(String(regionData.ozon || regionData.Ozon || 0));
+          if (!isNaN(oz)) {
+            ozon = Math.round(oz);
+            break;
+          }
+        }
+      }
+    } catch (error) {
+      continue;
+    }
+  }
+
+  if (uvIndex === undefined && ozon === undefined) {
+    return null;
+  }
+
+  return {
+    uvIndex,
+    uvIndexStufe: uvIndex !== undefined ? (uvIndex <= 2 ? 'Niedrig' : uvIndex <= 5 ? 'Moderat' : uvIndex <= 7 ? 'Hoch' : uvIndex <= 10 ? 'Sehr hoch' : 'Extrem hoch') : undefined,
+    ozon,
+    ozonStufe: ozon !== undefined ? (ozon < 120 ? 'Niedrig' : ozon < 180 ? 'Moderat' : ozon < 240 ? 'Erhöht' : 'Hoch') : undefined,
+  };
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<BiowetterData | { error: string }>
@@ -359,15 +516,46 @@ export default async function handler(
   }
 
   try {
-    const data = await fetchDWDData();
+    // Tüm verileri paralel olarak çek
+    const [biowetterData, pollenData, gefahrenindizesData] = await Promise.all([
+      fetchDWDData(),
+      fetchPollenDataInternal(),
+      fetchGefahrenindizesDataInternal(),
+    ]);
     
-    if (!data) {
-      return res.status(500).json({ error: 'Veri alınamadı' });
+    // Biowetter verisi yoksa hata döndür
+    if (!biowetterData) {
+      return res.status(500).json({ error: 'Biowetter verisi alınamadı' });
     }
     
-    res.status(200).json(data);
+    // Diğer verileri ekle
+    const combinedData: BiowetterData = {
+      ...biowetterData,
+    };
+    
+    // Polen verilerini ekle
+    if (pollenData) {
+      combinedData.pollen = pollenData;
+    }
+    
+    // Gefahrenindizes verilerini ekle
+    if (gefahrenindizesData) {
+      combinedData.uvIndex = gefahrenindizesData.uvIndex;
+      combinedData.uvIndexStufe = gefahrenindizesData.uvIndexStufe;
+      combinedData.ozon = gefahrenindizesData.ozon;
+      combinedData.ozonStufe = gefahrenindizesData.ozonStufe;
+    }
+    
+    res.status(200).json(combinedData);
   } catch (error: any) {
     console.error('API Error:', error);
+    
+    // Hata durumunda bile biowetter verisini döndürmeye çalış
+    const biowetterData = await fetchDWDData().catch(() => null);
+    if (biowetterData) {
+      return res.status(200).json(biowetterData);
+    }
+    
     res.status(500).json({ error: error.message || 'Sunucu hatası' });
   }
 }

@@ -11,6 +11,13 @@ interface BiowetterData {
   warnung?: string;
   temperatur?: number;
   luftfeuchtigkeit?: number;
+  pollen?: {
+    [key: string]: number; // Polen türü -> Yoğunluk (0-3)
+  };
+  uvIndex?: number;
+  uvIndexStufe?: string;
+  ozon?: number;
+  ozonStufe?: string;
 }
 
 export default function Home() {
@@ -40,11 +47,25 @@ export default function Home() {
   const getBadgeClass = (belastung?: string) => {
     if (!belastung) return 'badge badge-low';
     const lower = belastung.toLowerCase();
-    if (lower.includes('niedrig')) return 'badge badge-low';
-    if (lower.includes('moderat')) return 'badge badge-moderate';
-    if (lower.includes('erhöht')) return 'badge badge-high';
-    if (lower.includes('hoch')) return 'badge badge-very-high';
+    if (lower.includes('niedrig') || lower.includes('low')) return 'badge badge-low';
+    if (lower.includes('moderat') || lower.includes('moderate')) return 'badge badge-moderate';
+    if (lower.includes('erhöht') || lower.includes('high')) return 'badge badge-high';
+    if (lower.includes('hoch') || lower.includes('very high') || lower.includes('sehr hoch')) return 'badge badge-very-high';
+    if (lower.includes('extrem')) return 'badge badge-very-high';
     return 'badge badge-moderate';
+  };
+
+  const getPollenBadgeClass = (level: number): string => {
+    if (level === 0) return 'badge badge-low';
+    if (level === 1) return 'badge badge-low';
+    if (level === 2) return 'badge badge-moderate';
+    if (level === 3) return 'badge badge-high';
+    return 'badge badge-moderate';
+  };
+
+  const getPollenLevelText = (level: number): string => {
+    const levels = ['Keine', 'Niedrig', 'Mittel', 'Hoch'];
+    return levels[level] || 'Unbekannt';
   };
 
   const formatDate = (dateString: string) => {
@@ -127,7 +148,58 @@ export default function Home() {
                       <p>{data.luftfeuchtigkeit}%</p>
                     </div>
                   )}
+
+                  {data.uvIndex !== undefined && (
+                    <div className="info-item">
+                      <h3>UV-Index</h3>
+                      <p>
+                        {data.uvIndex}
+                        {data.uvIndexStufe && (
+                          <span className={getBadgeClass(data.uvIndexStufe)} style={{ marginLeft: '0.5rem', fontSize: '0.8rem' }}>
+                            {data.uvIndexStufe}
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  )}
+
+                  {data.ozon !== undefined && (
+                    <div className="info-item">
+                      <h3>Ozon</h3>
+                      <p>
+                        {data.ozon} µg/m³
+                        {data.ozonStufe && (
+                          <span className={getBadgeClass(data.ozonStufe)} style={{ marginLeft: '0.5rem', fontSize: '0.8rem' }}>
+                            {data.ozonStufe}
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  )}
                 </div>
+
+                {/* Pollenflug Sektion */}
+                {data.pollen && Object.keys(data.pollen).length > 0 && (
+                  <div style={{ marginTop: '2rem', padding: '1.5rem', background: '#f8f9fa', borderRadius: '12px' }}>
+                    <h3 style={{ color: '#667eea', marginBottom: '1rem', fontSize: '1.1rem' }}>
+                      🌸 Pollenflug (Polen Uçuşu)
+                    </h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem' }}>
+                      {Object.entries(data.pollen).map(([pollenType, level]) => (
+                        <div key={pollenType} style={{ padding: '0.75rem', background: 'white', borderRadius: '8px', border: '1px solid #e0e0e0' }}>
+                          <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: '0.25rem' }}>
+                            {pollenType}
+                          </div>
+                          <div style={{ fontSize: '1.2rem', fontWeight: '600' }}>
+                            <span className={getPollenBadgeClass(level)}>
+                              {getPollenLevelText(level)}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {data.beschreibung && (
                   <div style={{ marginTop: '2rem', padding: '1.5rem', background: '#f8f9fa', borderRadius: '12px' }}>
