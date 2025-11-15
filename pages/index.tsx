@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
+import { GetStaticProps } from 'next';
 import axios from 'axios';
 import { 
   Activity, 
@@ -12,28 +13,15 @@ import {
   Calendar,
   CloudSun
 } from 'lucide-react';
+import { getBiowetterData, BiowetterData } from '../lib/biowetter-data';
 
-interface BiowetterData {
-  region: string;
-  date: string;
-  belastung?: string;
-  gefuehl?: string;
-  beschreibung?: string;
-  warnung?: string;
-  temperatur?: number;
-  luftfeuchtigkeit?: number;
-  pollen?: {
-    [key: string]: number; // Polen türü -> Yoğunluk (0-3)
-  };
-  uvIndex?: number;
-  uvIndexStufe?: string;
-  ozon?: number;
-  ozonStufe?: string;
+interface HomeProps {
+  initialData: BiowetterData;
 }
 
-export default function Home() {
-  const [data, setData] = useState<BiowetterData | null>(null);
-  const [loading, setLoading] = useState(true);
+export default function Home({ initialData }: HomeProps) {
+  const [data, setData] = useState<BiowetterData>(initialData);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchBiowetter = async () => {
@@ -52,8 +40,6 @@ export default function Home() {
   };
 
   useEffect(() => {
-    fetchBiowetter();
-    
     // Always apply dark theme
     const root = document.documentElement;
     root.setAttribute('data-theme', 'dark');
@@ -403,4 +389,36 @@ export default function Home() {
     </>
   );
 }
+
+// SSG with ISR - Incremental Static Regeneration
+// Her 1 saatte bir otomatik olarak yeniden oluşturulur
+export const getStaticProps: GetStaticProps = async () => {
+  try {
+    const data = await getBiowetterData();
+    
+    return {
+      props: {
+        initialData: data,
+      },
+      // ISR: Her 3600 saniyede (1 saat) bir yeniden oluştur
+      revalidate: 3600,
+    };
+  } catch (error) {
+    console.error('Error in getStaticProps:', error);
+    
+    // Fallback data
+    return {
+      props: {
+        initialData: {
+          region: 'Wiesbaden',
+          date: new Date().toISOString().split('T')[0],
+          belastung: 'Moderat',
+          gefuehl: 'Angenehm',
+          beschreibung: 'Die biometeorologischen Daten werden aktuell geladen.',
+        },
+      },
+      revalidate: 3600,
+    };
+  }
+};
 
