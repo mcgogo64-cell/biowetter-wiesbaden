@@ -24,11 +24,67 @@ interface BiowetterData {
 // DWD Open Data'dan Wiesbaden için biyometeorolojik veri çekme
 // DWD API key gerektirmez - önceden oluşturulmuş dosyalara doğrudan HTTP ile erişim
 async function fetchDWDData(): Promise<BiowetterData | null> {
+  // Bright Sky API kullanarak gerçek DWD verilerine erişim
+  // Bright Sky, DWD'nin resmi verilerini JSON formatında sunar
+  try {
+    const lat = 50.0826; // Wiesbaden latitude
+    const lon = 8.2400; // Wiesbaden longitude
+    const today = new Date().toISOString().split('T')[0];
+    
+    const brightSkyUrl = `https://api.brightsky.dev/current_weather?lat=${lat}&lon=${lon}&date=${today}`;
+    
+    console.log(`Versuche Bright Sky API (DWD Daten): ${brightSkyUrl}`);
+    
+    const response = await axios.get(brightSkyUrl, {
+      timeout: 15000,
+      headers: {
+        'User-Agent': 'Biowetter-Wiesbaden/1.0',
+      },
+    });
+
+    if (response.status === 200 && response.data && response.data.weather) {
+      const weather = response.data.weather;
+      const sources = response.data.sources || [];
+      
+      console.log('Bright Sky API erfolgreich - DWD Daten erhalten');
+      
+      // Biowetter seviyesini sıcaklık ve diğer faktörlere göre hesapla
+      const temp = weather.temperature || 15;
+      const humidity = weather.relative_humidity || 65;
+      
+      // Basit biometeorolojik belastung hesaplama
+      let belastung = 'Moderat';
+      let gefuehl = 'Angenehm';
+      
+      if (temp < 5 || temp > 30) {
+        belastung = 'Erhöht';
+        gefuehl = 'Etwas belastend';
+      } else if (temp < 0 || temp > 35) {
+        belastung = 'Hoch';
+        gefuehl = 'Belastend';
+      } else if (temp >= 15 && temp <= 25 && humidity >= 40 && humidity <= 70) {
+        belastung = 'Niedrig';
+        gefuehl = 'Sehr angenehm';
+      }
+      
+      return {
+        region: 'Wiesbaden',
+        date: today,
+        belastung,
+        gefuehl,
+        beschreibung: `Aktuelle Wetterbedingungen in Wiesbaden: ${weather.condition || 'Keine Beschreibung verfügbar'}. Die biometeorologischen Bedingungen basieren auf DWD-Daten über Bright Sky API.`,
+        warnung: undefined,
+        temperatur: weather.temperature ? Math.round(weather.temperature * 10) / 10 : undefined,
+        luftfeuchtigkeit: weather.relative_humidity ? Math.round(weather.relative_humidity) : undefined,
+      };
+    }
+  } catch (error: any) {
+    console.error('Bright Sky API Error:', error.message);
+  }
+  
+  // Fallback: Direkt DWD endpoint'lerini dene
   const baseUrl = 'https://opendata.dwd.de';
   
-  // DWD'nin biyometeorolojik veriler için olası endpoint'ler
-  // Bu dosyalar düzenli olarak güncellenir ve herkese açıktır
-  // DWD genellikle XML ve CSV formatında veri sunar
   const possibleEndpoints = [
     // Biyometeorolojik uyarılar - XML formatları
     `${baseUrl}/climate_environment/health/alerts/warnings/BGWW_L.xml`,
@@ -107,6 +163,128 @@ async function fetchDWDData(): Promise<BiowetterData | null> {
   // Tüm endpoint'ler başarısız olduysa fallback veri döndür
   console.warn('Alle DWD-Endpoints fehlgeschlagen. Verwende Fallback-Daten.');
   return getFallbackData();
+}
+
+// Bright Sky API - DWD verilerini JSON formatında sunan ücretsiz API
+async function fetchBrightSkyWeather(): Promise<BiowetterData | null> {
+  try {
+    // Wiesbaden koordinatları
+    const lat = 50.0826;
+    const lon = 8.2400;
+    const today = new Date().toISOString().split('T')[0];
+    
+    const url = `https://api.brightsky.dev/weather?lat=${lat}&lon=${lon}&date=${today}`;
+    
+    console.log(`Versuche Bright Sky API: ${url}`);
+    
+    const response = await axios.get(url, {
+      timeout: 15000,
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'Biowetter-Wiesbaden/1.0',
+      },
+      validateStatus: (status) => status < 500,
+    });
+
+    if (response.status === 200 && response.data && response.data.weather) {
+      console.log('Erfolgreich Daten von Bright Sky API');
+      
+      // En güncel veriyi al (son saat)
+      const weatherData = response.data.weather;
+      const latest = weatherData[weatherData.length - 1] || weatherData[0];
+      
+      if (!latest) {
+        return null;
+      }
+
+      // DWD verisini format'a çevir
+      return {
+        region: 'Wiesbaden',
+        date: today,
+        temperatur: latest.temperature ? Math.round(latest.temperature * 10) / 10 : undefined,
+        luftfeuchtigkeit: latest.relative_humidity ? Math.round(latest.relative_humidity) : undefined,
+        belastung: getBelastungFromWeather(latest),
+        gefuehl: getGefuehlFromWeather(latest),
+        beschreibung: getBeschreibungFromWeather(latest),
+        warnung: undefined, // Gerçek veri, warnung yok
+      };
+    }
+    
+    return null;
+  } catch (error: any) {
+    console.log(`Bright Sky API fehlgeschlagen: ${error.message}`);
+    return null;
+  }
+}
+
+// Hava durumu verisinden biometeorolojik belastung hesapla
+function getBelastungFromWeather(weather: any): string {
+  const temp = weather.temperature || 20;
+  const humidity = weather.relative_humidity || 60;
+  const pressure = weather.pressure_msl || 1013;
+  
+  // Basit belastung hesaplaması
+  let score = 0;
+  
+  // Sıcaklık faktörü
+  if (temp < 10 || temp > 30) score += 2;
+  else if (temp < 15 || temp > 25) score += 1;
+  
+  // Nem faktörü
+  if (humidity > 80 || humidity < 30) score += 2;
+  else if (humidity > 70 || humidity < 40) score += 1;
+  
+  // Basınç faktörü
+  if (pressure < 1000 || pressure > 1025) score += 1;
+  
+  // Rüzgar faktörü
+  const wind = weather.wind_speed || 0;
+  if (wind > 30) score += 2;
+  else if (wind > 20) score += 1;
+  
+  if (score <= 1) return 'Niedrig';
+  if (score <= 3) return 'Moderat';
+  if (score <= 5) return 'Erhöht';
+  return 'Hoch';
+}
+
+function getGefuehlFromWeather(weather: any): string {
+  const temp = weather.temperature || 20;
+  const humidity = weather.relative_humidity || 60;
+  
+  if (temp >= 18 && temp <= 24 && humidity >= 40 && humidity <= 70) {
+    return 'Sehr angenehm';
+  } else if (temp >= 15 && temp <= 27 && humidity >= 30 && humidity <= 80) {
+    return 'Angenehm';
+  } else if (temp < 10 || temp > 30 || humidity > 85) {
+    return 'Belastend';
+  } else {
+    return 'Etwas belastend';
+  }
+}
+
+function getBeschreibungFromWeather(weather: any): string {
+  const belastung = getBelastungFromWeather(weather);
+  const gefuehl = getGefuehlFromWeather(weather);
+  const temp = weather.temperature || 20;
+  const condition = weather.condition || 'dry';
+  
+  const conditionTexts: { [key: string]: string } = {
+    'dry': 'trocken',
+    'fog': 'neblig',
+    'rain': 'regnerisch',
+    'sleet': 'Schneeregen',
+    'snow': 'schneebedeckt',
+    'hail': 'Hagel',
+    'thunderstorm': 'gewitterhaft',
+    'wind': 'windig',
+  };
+  
+  const conditionText = conditionTexts[condition] || 'angenehm';
+  
+  return `Die aktuellen Wetterbedingungen in Wiesbaden sind ${conditionText} mit ${Math.round(temp)}°C. ` +
+         `Die biometeorologische Belastung ist ${belastung.toLowerCase()} und wird von den meisten Menschen als ${gefuehl.toLowerCase()} empfunden. ` +
+         `Aktuelle Daten werden über die DWD-API (Bright Sky) bereitgestellt.`;
 }
 
 // XML verilerini parse et
