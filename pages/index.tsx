@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
-import { GetStaticProps } from 'next';
+import { GetServerSideProps } from 'next';
 import axios from 'axios';
 import { 
   Activity, 
@@ -390,9 +390,9 @@ export default function Home({ initialData }: HomeProps) {
   );
 }
 
-// SSG with ISR - Incremental Static Regeneration
-// Her 1 saatte bir otomatik olarak yeniden oluşturulur
-export const getStaticProps: GetStaticProps = async () => {
+// SSR - Server-Side Rendering
+// Her istekte güncel veri çekilir, kullanıcılar her zaman en yeni veriyi görür
+export const getServerSideProps: GetServerSideProps = async () => {
   try {
     const data = await getBiowetterData();
     
@@ -400,11 +400,9 @@ export const getStaticProps: GetStaticProps = async () => {
       props: {
         initialData: data,
       },
-      // ISR: Her 3600 saniyede (1 saat) bir yeniden oluştur
-      revalidate: 3600,
     };
   } catch (error) {
-    console.error('Error in getStaticProps:', error);
+    console.error('Error in getServerSideProps:', error);
     
     // Fallback data
     return {
@@ -415,9 +413,16 @@ export const getStaticProps: GetStaticProps = async () => {
           belastung: 'Moderat',
           gefuehl: 'Angenehm',
           beschreibung: 'Die biometeorologischen Daten werden aktuell geladen.',
+          warnung: null,
+          temperatur: null,
+          luftfeuchtigkeit: null,
+          pollen: null,
+          uvIndex: null,
+          uvIndexStufe: null,
+          ozon: null,
+          ozonStufe: null,
         },
       },
-      revalidate: 3600,
     };
   }
 };
