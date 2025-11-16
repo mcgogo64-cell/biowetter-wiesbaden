@@ -338,12 +338,11 @@ export default function Home({ initialData }: HomeProps) {
                   </div>
                 )}
 
-                {data.beschreibung && (
-                  <div className="description-section">
-                    <h3>Beschreibung</h3>
-                    <p>{data.beschreibung}</p>
-                  </div>
-                )}
+                <div className="description-section">
+                  <h3>Wofür diese Seite?</h3>
+                  <p>Alle hier gezeigten Daten (Biowetter-Belastung, Pollenflug, UV-Index und Ozon) stammen direkt vom offiziellen Deutschen Wetterdienst (DWD).</p>
+                  <p style={{ marginTop: '1rem' }}>Diese Seite ist ein privates, werbefreies Projekt, um diese wichtigen Informationen schnell, modern und mobilfreundlich für die Bürger von Wiesbaden darzustellen.</p>
+                </div>
 
                 {data.warnung && (
                   <div className="warning-section">
