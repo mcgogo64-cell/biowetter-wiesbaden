@@ -4,6 +4,18 @@ export default function Document() {
   return (
     <Html lang="de">
       <Head>
+        {/* Google tag (gtag.js) */}
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-Q61RPHYM85"></script>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'G-Q61RPHYM85');
+            `,
+          }}
+        />
         {/* Structured Data - JSON-LD */}
         <script
           type="application/ld+json"
@@ -60,4 +72,6 @@ export default function Document() {
     </Html>
   );
 }
+
+
 
